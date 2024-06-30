@@ -12,6 +12,7 @@ var (
 	ErrorLog *log.Logger
 )
 
+// logger
 func createLogger(logType string) *log.Logger {
 
 	// get current path location
@@ -49,6 +50,8 @@ func createLogger(logType string) *log.Logger {
 }
 
 func init() {
+	// log for info
 	InfoLog = createLogger("info")
+	// log for error
 	ErrorLog = createLogger("error")
 }
