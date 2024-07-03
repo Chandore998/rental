@@ -19,7 +19,7 @@ func Init(database *gorm.DB, r *gin.Engine) {
 
 	as := NewUsersService(db) // admin services
 
+	r.POST("/signUp", as.signup)
 	r.POST("/login", as.login)
-	// r.POST("/signUp", as.signUp)
 
 }
