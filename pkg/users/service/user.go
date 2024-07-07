@@ -30,19 +30,33 @@ type SignupUser struct {
 	ConfirmPassword string `json:"confirmpassword" binding:"required"`
 }
 
+type UpdateUser struct {
+	PhoneNumber       *string `json:"phonenumber" `
+	FullName          *string `json:"fullname"`
+	ZipCode           *string `json: "zipcode"`
+	IsBusinessAccount bool    `json:"isbusinessaccount"`
+}
+
 func (s *UsersService) login(c *gin.Context) {
 	var loginuser LoginUser
 	if err := c.ShouldBindJSON(&loginuser); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	userDetail, err := s.Users.GetUserByEmail(loginuser.Email)
 	if err != nil {
-		c.JSON(400, gin.H{"status": 400, "error": "Invalid email. or password"})
+		c.JSON(400, gin.H{"status": http.StatusBadRequest, "error": "Invalid email. or password"})
+		return
 	}
 
-	c.JSON(200, gin.H{"message": "doe", "doe": userDetail})
+	isComparePassword := utils.ComparePassword(userDetail.Password, loginuser.Password)
+	if !isComparePassword {
+		c.JSON(400, gin.H{"status": http.StatusBadRequest, "error": "Password is invaild"})
+		return
+	}
+
+	c.JSON(200, gin.H{"status": http.StatusOK, "data": userDetail, "error": "null"})
 	return
 
 }
@@ -59,10 +73,12 @@ func (s *UsersService) signup(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": err})
+		return
 	}
 
 	if emailExist {
 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": "Email already exist "})
+		return
 	}
 
 	if signupuser.Password != signupuser.ConfirmPassword {
@@ -73,6 +89,7 @@ func (s *UsersService) signup(c *gin.Context) {
 	hashPassword, err := utils.HashPassword(signupuser.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
 	}
 
 	user := users.Users{
@@ -92,6 +109,57 @@ func (s *UsersService) signup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Users created successfully",
 	})
-	return
 
+}
+
+func (s *UsersService) updateUser(c *gin.Context) {
+	id := c.Param("id")
+
+	var updateuser UpdateUser
+
+	if err := c.ShouldBindJSON(&updateuser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err := s.Users.IsUsersExist("id", id)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": err})
+		return
+	}
+
+	user := users.Users{
+		Phone:             updateuser.PhoneNumber,
+		IsBusinessAccount: updateuser.IsBusinessAccount,
+		Zipcode:           updateuser.ZipCode,
+		FullName:          updateuser.FullName,
+	}
+
+	_, err = s.Users.UpdateUser(id, user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Users updated successfully",
+	})
+
+}
+
+func (s *UsersService) getUser(c *gin.Context) {
+	id := c.Param("id")
+
+	userDetail, err := s.Users.GetUserInfo(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusFound, gin.H{"status": http.StatusOK, "data": userDetail, "error": "null"})
 }

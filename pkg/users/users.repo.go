@@ -2,7 +2,6 @@ package users
 
 import (
 	"errors"
-	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -27,8 +26,6 @@ func (user *UsersRepo) IsUsersExist(key string, value string) (bool, error) {
 
 	err := user.DB.Where(key+" = ?", value).First(&userDetail).Error
 
-	fmt.Println(err, "get deeeeeeee")
-
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, err
@@ -37,4 +34,16 @@ func (user *UsersRepo) IsUsersExist(key string, value string) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func (user *UsersRepo) UpdateUser(id string, userInput Users) (Users, error) {
+
+	err := user.DB.Where("id = ?", id).Updates(userInput).Error
+	return userInput, err
+}
+
+func (user *UsersRepo) GetUserInfo(id string) (Users, error) {
+	var userDetail Users
+	err := user.DB.Where("id = ?", id).First(&userDetail).Error
+	return userDetail, err
 }

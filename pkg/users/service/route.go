@@ -17,9 +17,14 @@ func Init(database *gorm.DB, r *gin.Engine) {
 	db = database
 	Migration(db)
 
-	as := NewUsersService(db) // admin services
+	as := NewUsersService(db)
 
-	r.POST("/signUp", as.signup)
-	r.POST("/login", as.login)
+	userGroup := r.Group("/user")
+	{
+		userGroup.POST("/signUp", as.signup)
+		userGroup.POST("/login", as.login)
+		userGroup.PUT("/:id", as.updateUser)
+		userGroup.GET("/:id", as.getUser)
+	}
 
 }
