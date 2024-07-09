@@ -11,6 +11,7 @@ var db *gorm.DB
 
 func Migration(db *gorm.DB) {
 	db.AutoMigrate(&users.Users{})
+	db.AutoMigrate(&users.EmailVerification{})
 }
 
 func Init(database *gorm.DB, r *gin.Engine) {
@@ -25,6 +26,8 @@ func Init(database *gorm.DB, r *gin.Engine) {
 		userGroup.POST("/login", as.login)
 		userGroup.PUT("/:id", as.updateUser)
 		userGroup.GET("/:id", as.getUser)
+		userGroup.POST("/isEmailRegistered", as.verifyEmail)
+		// userGroup.POST("/sendEmailOtp", as.sendEmailOtp)
 	}
 
 }

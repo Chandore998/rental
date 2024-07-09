@@ -10,12 +10,14 @@ import (
 )
 
 type UsersService struct {
-	Users *users.UsersRepo
+	Users             *users.UsersRepo
+	EmailVerification *users.EmailVerificationRepo
 }
 
 func NewUsersService(db *gorm.DB) *UsersService {
 	return &UsersService{
-		Users: users.NewUsersRepo(db),
+		Users:             users.NewUsersRepo(db),
+		EmailVerification: users.NewEmailVerificationRepo(db),
 	}
 }
 
@@ -37,6 +39,10 @@ type UpdateUser struct {
 	IsBusinessAccount bool    `json:"isbusinessaccount"`
 }
 
+type VerifyEmail struct {
+	Email string `json:"email"`
+}
+
 func (s *UsersService) login(c *gin.Context) {
 	var loginuser LoginUser
 	if err := c.ShouldBindJSON(&loginuser); err != nil {
@@ -54,6 +60,18 @@ func (s *UsersService) login(c *gin.Context) {
 	if !isComparePassword {
 		c.JSON(400, gin.H{"status": http.StatusBadRequest, "error": "Password is invaild"})
 		return
+	}
+
+	otp, err := utils.GenerateOtp(5)
+	if err != nil {
+
+	}
+	_, err = utils.SendOtpMail(loginuser.Email, otp)
+
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Users created successfully",
+		})
 	}
 
 	c.JSON(200, gin.H{"status": http.StatusOK, "data": userDetail, "error": "null"})
@@ -163,3 +181,56 @@ func (s *UsersService) getUser(c *gin.Context) {
 
 	c.JSON(http.StatusFound, gin.H{"status": http.StatusOK, "data": userDetail, "error": "null"})
 }
+
+func (s *UsersService) verifyEmail(c *gin.Context) {
+
+	var verifyEmail VerifyEmail
+
+	if err := c.ShouldBindJSON(&verifyEmail); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	emailExist, err := s.Users.IsUsersExist("email", verifyEmail.Email)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": err})
+		return
+	}
+
+	if emailExist {
+		c.JSON(http.StatusFound, gin.H{"status": http.StatusFound, "message": "Email already exists"})
+		return
+	}
+	c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "error": "Email not found"})
+}
+
+// func (s *UsersService) sendEmailOtp(c *gin.Context) {
+// 	var verifyEmail VerifyEmail
+
+// 	if err := c.ShouldBindJSON(&verifyEmail); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	emailExist, err := s.Users.IsUsersExist("email", verifyEmail.Email)
+
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": err})
+// 		return
+// 	}
+
+// 	if !emailExist {
+// 		c.JSON(http.StatusNotFound, gin.H{"status": http.StatusNotFound, "error": "Email not found"})
+// 		return
+// 	}
+
+// 	s.EmailVerification.GetEmailVerification(verifyEmail.Email)
+
+// 	otp, err := utils.GenerateOtp(5)
+// 	if err != nil {
+
+// 	}
+// 	_, err = utils.SendOtpMail(loginuser.Email, otp)
+
+// }
