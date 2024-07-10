@@ -116,7 +116,20 @@ func (s *UsersService) signup(c *gin.Context) {
 	}
 
 	user.Password = hashPassword
-	err = db.Create(&user).Error
+	userDetail, err := s.Users.CreateUser(user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	payload := &utils.Payload{
+		UserId: userDetail.ID,
+		Email:  userDetail.Email,
+	}
+
+	tokenString, err := utils.CreateToken(payload)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -126,6 +139,8 @@ func (s *UsersService) signup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Users created successfully",
+		"data":    userDetail,
+		"token":   tokenString,
 	})
 
 }

@@ -14,6 +14,22 @@ func NewUsersRepo(db *gorm.DB) *UsersRepo {
 	return &UsersRepo{DB: db}
 }
 
+func (user *UsersRepo) CreateUser(users Users) (*Users, error) {
+	err := user.DB.Create(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	userDetail, err := user.GetUserByEmail(users.Email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &userDetail, err
+}
+
 func (user *UsersRepo) GetUserByEmail(email string) (Users, error) {
 	var userDetail Users
 	err := user.DB.Where("email = ?", email).First(&userDetail).Error
@@ -37,7 +53,6 @@ func (user *UsersRepo) IsUsersExist(key string, value string) (bool, error) {
 }
 
 func (user *UsersRepo) UpdateUser(id string, userInput Users) (Users, error) {
-
 	err := user.DB.Where("id = ?", id).Updates(userInput).Error
 	return userInput, err
 }
